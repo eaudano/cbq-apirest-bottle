@@ -6,5 +6,5 @@ pip install bottle
 ```
 Luego:
 ```
-python decrypto.py
+python apirest_bottle.py
 ```

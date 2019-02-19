@@ -6,36 +6,41 @@ from bottle import run, get, post, request
 DB = {}
 
 
-@get('/cuenta_corriente')
-def get_all_cuenta_corriente():
-    return {'cuentas': DB['cuenta_corriente']}
+@get('/<table>')
+def get_all_from_table(table):
+    return {table: DB[table]}
 
 
-@get('/cuenta_corriente/<id>')
-def get_cuenta_corriente_by_id(id):
-    cuenta = [c for c in DB['cuenta_corriente'] if c['id'] == int(id)]
-    return{'cuenta_corriente': cuenta[0]}
+@get('/<table>/<id>')
+def get_from_table_by_id(table, id):
+    element = [c for c in DB[table] if c['id'] == int(id)]
+    return{table: element[0]}
 
-
-@post('/cuenta_corriente')
-def add_cuenta_corriente():
+# TODO: Generalize request.json.*
+@post('/<table>')
+def add_from_table(table):
     global DB
-    new_cuenta_corriente = {'id': len(
-        DB) + 1, 'nombre': request.json.get('nombre')}
-    DB['cuenta_corriente'].append(new_cuenta_corriente)
-    return {'cuenta_corriente': new_cuenta_corriente}
+    new_element = {
+        'id': len(DB) + 1,
+        'nombre': request.json.get('nombre')}
+    DB[table].append(new_element)
+    return {'element': new_element}
 
 
-def setup_db(json_file=None):
+# TODO: Add method to remove elements
+
+
+def setup_db(json_file_list):
     global DB
-    if json_file:
-        with open(json_file) as jf:
-            table_name = json_file.split('/')[-1].split('.')[0]
-            data = json.loads(jf.read())
-            DB[table_name] = []
-            for i, d in enumerate(data):
-                d['id'] = i
-                DB[table_name].append(d)
+    if json_file_list:
+        for json_file in json_file_list:
+            with open(json_file) as jf:
+                table_name = json_file.split('/')[-1].split('.')[0]
+                data = json.loads(jf.read())
+                DB[table_name] = []
+                for i, d in enumerate(data):
+                    d['id'] = i
+                    DB[table_name].append(d)
     else:
         DB['cuenta_corriente'] = []
 
@@ -45,10 +50,11 @@ if __name__ == '__main__':
         argument_default=None, description='Run APIRest in Bottle.')
     parser.add_argument('-p', '--port', type=str, default='9000',
                         dest='port', help='Port (default 9000)')
-    parser.add_argument('-d', '--data', type=str, default=None,
-                        dest='data', help='Path to JSON file')
+    parser.add_argument('-d', '--data', type=str, default=[],
+                        nargs="+", dest='json_file_list', required=True,
+                        help='Path to JSON file (Space separated list. File name format: table_name.json)')
 
     args = parser.parse_args()
-    setup_db(args.data)
+    setup_db(args.json_file_list)
 
     run(host='localhost', port=args.port, reloader=True, debug=True)
